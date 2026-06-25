@@ -5,6 +5,7 @@ import { BookingStatusForm } from "@/src/components/BookingStatusForm";
 import { requireAdminUser } from "@/src/lib/admin-page-auth";
 import { prisma } from "@/src/lib/prisma";
 import { formatDateString } from "@/src/lib/date";
+import { notFound } from "next/navigation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
