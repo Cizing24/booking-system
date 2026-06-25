@@ -1,12 +1,11 @@
 import Link from "next/link";
 import { PageHeader } from "@/src/components/PageHeader";
 import { AdminNav } from "@/src/components/AdminNav";
-import { BookingStatusForm } from "@/src/components/BookingStatusForm";
 import { StatusBadge } from "@/src/components/ui/StatusBadge";
 import { requireAdminUser } from "@/src/lib/admin-page-auth";
 import { prisma } from "@/src/lib/prisma";
 import { formatDateString } from "@/src/lib/date";
-import { formatDateTime, formatPrice } from "@/src/lib/format";
+import { formatDateTime } from "@/src/lib/format";
 import {
   type BookingStatus,
   getBookingStatusText,
@@ -15,166 +14,123 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type AdminBookingDetailPageProps = {
-  params: Promise<{
-    id: string;
-  }>;
-};
-
-export default async function AdminBookingDetailPage({
-  params,
-}: AdminBookingDetailPageProps) {
-  const adminUser = await requireAdminUser();
-  const { id } = await params;
-
-  const booking = await prisma.booking.findUnique({
-    where: {
-      id,
-    },
+async function getBookings() {
+  const bookings = await prisma.booking.findMany({
     include: {
       service: true,
     },
+    orderBy: [
+      {
+        bookingDate: "desc",
+      },
+      {
+        startTime: "asc",
+      },
+    ],
   });
 
-  if (!booking) {
-    return (
-      <main className="min-h-screen bg-slate-50">
-        <AdminNav email={adminUser.email} />
+  return bookings.map((booking) => ({
+    id: booking.id,
+    bookingDate: formatDateString(booking.bookingDate),
+    time: `${booking.startTime} - ${booking.endTime}`,
+    serviceName: booking.service.name,
+    customerName: booking.customerName,
+    customerPhone: booking.customerPhone,
+    customerEmail: booking.customerEmail,
+    status: booking.status as BookingStatus,
+    createdAt: formatDateTime(booking.createdAt),
+  }));
+}
 
-        <section className="mx-auto max-w-3xl px-6 py-12">
-          <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-            <h1 className="text-3xl font-bold text-slate-950">
-              找不到預約資料
-            </h1>
-
-            <p className="mt-4 text-slate-600">
-              這筆預約可能不存在，或已經被刪除。
-            </p>
-
-            <Link
-              href="/admin/bookings"
-              className="mt-8 inline-flex rounded-lg bg-slate-900 px-5 py-3 text-sm font-medium text-white hover:bg-slate-700"
-            >
-              返回預約管理
-            </Link>
-          </div>
-        </section>
-      </main>
-    );
-  }
-
-  const status = booking.status as BookingStatus;
+export default async function AdminBookingsPage() {
+  const adminUser = await requireAdminUser();
+  const bookings = await getBookings();
 
   return (
     <main className="min-h-screen bg-slate-50">
       <AdminNav email={adminUser.email} />
 
-      <section className="mx-auto max-w-3xl px-6 py-12">
+      <section className="mx-auto max-w-7xl px-6 py-12">
         <PageHeader
-          title="預約詳細資料"
-          description="管理者可以查看單筆預約完整資訊，並修改預約狀態。"
+          title="預約管理"
+          description="管理者可以查看所有預約紀錄，並進入詳細頁修改預約狀態。"
         />
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <dl className="grid gap-4 text-sm">
-            <div className="flex justify-between gap-6 border-b border-slate-100 pb-3">
-              <dt className="text-slate-500">使用者姓名</dt>
-              <dd className="font-medium text-slate-900">
-                {booking.customerName}
-              </dd>
-            </div>
+        {bookings.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-600">
+            目前沒有任何預約紀錄。
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <table className="w-full min-w-[1000px] text-left text-sm">
+              <thead className="bg-slate-100 text-slate-600">
+                <tr>
+                  <th className="px-4 py-3">預約日期</th>
+                  <th className="px-4 py-3">預約時段</th>
+                  <th className="px-4 py-3">服務名稱</th>
+                  <th className="px-4 py-3">使用者姓名</th>
+                  <th className="px-4 py-3">電話</th>
+                  <th className="px-4 py-3">Email</th>
+                  <th className="px-4 py-3">預約狀態</th>
+                  <th className="px-4 py-3">建立時間</th>
+                  <th className="px-4 py-3">操作</th>
+                </tr>
+              </thead>
 
-            <div className="flex justify-between gap-6 border-b border-slate-100 pb-3">
-              <dt className="text-slate-500">電話</dt>
-              <dd className="font-medium text-slate-900">
-                {booking.customerPhone}
-              </dd>
-            </div>
+              <tbody>
+                {bookings.map((booking) => (
+                  <tr
+                    key={booking.id}
+                    className="border-t border-slate-100 align-top"
+                  >
+                    <td className="px-4 py-3 font-medium text-slate-900">
+                      {booking.bookingDate}
+                    </td>
 
-            <div className="flex justify-between gap-6 border-b border-slate-100 pb-3">
-              <dt className="text-slate-500">Email</dt>
-              <dd className="font-medium text-slate-900">
-                {booking.customerEmail}
-              </dd>
-            </div>
+                    <td className="px-4 py-3 text-slate-700">
+                      {booking.time}
+                    </td>
 
-            <div className="flex justify-between gap-6 border-b border-slate-100 pb-3">
-              <dt className="text-slate-500">預約服務</dt>
-              <dd className="font-medium text-slate-900">
-                {booking.service.name}
-              </dd>
-            </div>
+                    <td className="px-4 py-3 text-slate-700">
+                      {booking.serviceName}
+                    </td>
 
-            <div className="flex justify-between gap-6 border-b border-slate-100 pb-3">
-              <dt className="text-slate-500">服務時長</dt>
-              <dd className="font-medium text-slate-900">
-                {booking.service.durationMinutes} 分鐘
-              </dd>
-            </div>
+                    <td className="px-4 py-3 text-slate-700">
+                      {booking.customerName}
+                    </td>
 
-            <div className="flex justify-between gap-6 border-b border-slate-100 pb-3">
-              <dt className="text-slate-500">服務價格</dt>
-              <dd className="font-medium text-slate-900">
-                {formatPrice(Number(booking.service.price.toString()))}
-              </dd>
-            </div>
+                    <td className="px-4 py-3 text-slate-700">
+                      {booking.customerPhone}
+                    </td>
 
-            <div className="flex justify-between gap-6 border-b border-slate-100 pb-3">
-              <dt className="text-slate-500">預約日期</dt>
-              <dd className="font-medium text-slate-900">
-                {formatDateString(booking.bookingDate)}
-              </dd>
-            </div>
+                    <td className="px-4 py-3 text-slate-700">
+                      {booking.customerEmail}
+                    </td>
 
-            <div className="flex justify-between gap-6 border-b border-slate-100 pb-3">
-              <dt className="text-slate-500">預約時段</dt>
-              <dd className="font-medium text-slate-900">
-                {booking.startTime} - {booking.endTime}
-              </dd>
-            </div>
+                    <td className="px-4 py-3">
+                      <StatusBadge variant={booking.status}>
+                        {getBookingStatusText(booking.status)}
+                      </StatusBadge>
+                    </td>
 
-            <div className="flex justify-between gap-6 border-b border-slate-100 pb-3">
-              <dt className="text-slate-500">備註</dt>
-              <dd className="max-w-md text-right font-medium text-slate-900">
-                {booking.note || "無"}
-              </dd>
-            </div>
+                    <td className="px-4 py-3 text-slate-700">
+                      {booking.createdAt}
+                    </td>
 
-            <div className="flex justify-between gap-6 border-b border-slate-100 pb-3">
-              <dt className="text-slate-500">預約狀態</dt>
-              <dd>
-                <StatusBadge variant={status}>
-                  {getBookingStatusText(status)}
-                </StatusBadge>
-              </dd>
-            </div>
-
-            <div className="flex justify-between gap-6 border-b border-slate-100 pb-3">
-              <dt className="text-slate-500">建立時間</dt>
-              <dd className="font-medium text-slate-900">
-                {formatDateTime(booking.createdAt)}
-              </dd>
-            </div>
-
-            <div className="flex justify-between gap-6">
-              <dt className="text-slate-500">更新時間</dt>
-              <dd className="font-medium text-slate-900">
-                {formatDateTime(booking.updatedAt)}
-              </dd>
-            </div>
-          </dl>
-
-          <BookingStatusForm bookingId={booking.id} currentStatus={status} />
-        </div>
-
-        <div className="mt-6">
-          <Link
-            href="/admin/bookings"
-            className="text-sm font-medium text-slate-700 underline"
-          >
-            返回預約管理
-          </Link>
-        </div>
+                    <td className="px-4 py-3">
+                      <Link
+                        href={`/admin/bookings/${booking.id}`}
+                        className="font-medium text-slate-900 underline"
+                      >
+                        查看詳細資料
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
     </main>
   );
