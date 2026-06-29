@@ -37,6 +37,7 @@ async function getBookings() {
     customerName: booking.customerName,
     customerPhone: booking.customerPhone,
     customerEmail: booking.customerEmail,
+    partySize: booking.partySize,
     status: booking.status as BookingStatus,
     createdAt: formatDateTime(booking.createdAt),
   }));
@@ -71,6 +72,7 @@ export default async function AdminBookingsPage() {
                   <th className="px-4 py-3">使用者姓名</th>
                   <th className="px-4 py-3">電話</th>
                   <th className="px-4 py-3">Email</th>
+                  <th className="px-4 py-3">人數</th>
                   <th className="px-4 py-3">預約狀態</th>
                   <th className="px-4 py-3">建立時間</th>
                   <th className="px-4 py-3">操作</th>
@@ -105,6 +107,10 @@ export default async function AdminBookingsPage() {
 
                     <td className="px-4 py-3 text-slate-700">
                       {booking.customerEmail}
+                    </td>
+
+                    <td className="px-4 py-3 text-slate-700">
+                      {booking.partySize} 人
                     </td>
 
                     <td className="px-4 py-3">

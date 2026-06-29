@@ -54,7 +54,12 @@ export default async function AdminBookingDetailPage({
   params,
 }: AdminBookingDetailPageProps) {
   const adminUser = await requireAdminUser();
-  const { id } = await params;
+  const resolvedParams = await params;
+  const id = resolvedParams?.id;
+
+  if (!id) {
+  notFound();
+  }
 
   const booking = await prisma.booking.findUnique({
     where: {
@@ -63,7 +68,7 @@ export default async function AdminBookingDetailPage({
     include: {
       service: true,
     },
-  });
+});
 
   if (!booking) {
     return (
@@ -124,6 +129,13 @@ export default async function AdminBookingDetailPage({
               <dt className="text-slate-500">Email</dt>
               <dd className="font-medium text-slate-900">
                 {booking.customerEmail}
+              </dd>
+            </div>
+
+            <div className="flex justify-between gap-6 border-b border-slate-100 pb-3">
+              <dt className="text-slate-500">預約人數</dt>
+              <dd className="font-medium text-slate-900">
+                {booking.partySize} 人
               </dd>
             </div>
 

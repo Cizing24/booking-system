@@ -5,6 +5,12 @@ import { formatDateString } from "@/src/lib/date";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+function isValidUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  );
+}
+
 type BookingSuccessPageProps = {
   searchParams: Promise<{
     bookingId?: string | string[];
@@ -20,7 +26,7 @@ export default async function BookingSuccessPage({
     ? rawBookingId[0]
     : rawBookingId ?? "";
 
-  const booking = bookingId
+  const booking = isValidUuid(bookingId)
     ? await prisma.booking.findUnique({
         where: {
           id: bookingId,
@@ -83,6 +89,13 @@ export default async function BookingSuccessPage({
               {booking.startTime} - {booking.endTime}
             </dd>
           </div>
+
+          <div className="flex justify-between gap-6 border-b border-slate-100 pb-3">
+            <dt className="text-slate-500">預約人數</dt>
+            <dd className="font-medium text-slate-900">
+              {booking.partySize} 人
+            </dd>
+          </div>  
 
           <div className="flex justify-between border-b border-slate-100 pb-3">
             <dt className="text-slate-500">使用者姓名</dt>

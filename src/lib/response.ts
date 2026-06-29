@@ -1,3 +1,5 @@
+import { NextResponse } from "next/server";
+
 export type ApiSuccess<T> = {
   success: true;
   data: T;
@@ -6,25 +8,43 @@ export type ApiSuccess<T> = {
 
 export type ApiError = {
   success: false;
-  error: string;
+  message: string;
 };
-
-export type ApiResponse<T> = ApiSuccess<T> | ApiError;
 
 export function successResponse<T>(
   data: T,
-  message?: string,
-): ApiSuccess<T> {
-  return {
-    success: true,
-    data,
-    message,
-  };
+  messageOrStatus?: string | number,
+  status = 200,
+): NextResponse<ApiSuccess<T>> {
+  const message =
+    typeof messageOrStatus === "string" ? messageOrStatus : undefined;
+
+  const responseStatus =
+    typeof messageOrStatus === "number" ? messageOrStatus : status;
+
+  return NextResponse.json(
+    {
+      success: true,
+      data,
+      ...(message ? { message } : {}),
+    },
+    {
+      status: responseStatus,
+    },
+  );
 }
 
-export function errorResponse(error: string): ApiError {
-  return {
-    success: false,
-    error,
-  };
+export function errorResponse(
+  message: string,
+  status = 400,
+): NextResponse<ApiError> {
+  return NextResponse.json(
+    {
+      success: false,
+      message,
+    },
+    {
+      status,
+    },
+  );
 }

@@ -7,12 +7,6 @@ datasource db {
   provider = "postgresql"
 }
 
-enum BookingStatus {
-  pending
-  confirmed
-  cancelled
-}
-
 model Service {
   id              String    @id @default(uuid()) @db.Uuid
   name            String
@@ -22,7 +16,6 @@ model Service {
   isActive        Boolean   @default(true) @map("is_active")
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
-
   bookings        Booking[]
 
   @@map("services")
@@ -41,7 +34,7 @@ model Booking {
   status        BookingStatus @default(pending)
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
-
+  partySize     Int           @default(1) @map("party_size")
   service       Service       @relation(fields: [serviceId], references: [id])
 
   @@index([serviceId, bookingDate, startTime, status])
@@ -56,4 +49,10 @@ model AdminUser {
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   @@map("admin_users")
+}
+
+enum BookingStatus {
+  pending
+  confirmed
+  cancelled
 }
